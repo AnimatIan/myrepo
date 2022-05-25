@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="DC.Language" content="en-us" />
+<meta name="geo.country" content="ZZ"/>
+<meta name="robots" content="index, follow" />
+<meta name="geo.country" content="ZZ" />
+<!-- Licensed Materials - Property of IBM -->
+<!-- US Government Users Restricted Rights -->
+<!-- Use, duplication or disclosure restricted by -->
+<!-- GSA ADP Schedule Contract with IBM Corp. -->
+<title>TOC from JSON</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+// Custom JS
+(function($) {
+$(document).ready(function(){
+
+$("form").submit(function(){
+
+	var IBMDocsurl = $("#IBMDocsurl").val();
+	var productKey = $("#productKey").val();
+	var language =  $("#language").val();
+	
+	/* https://www.ibm.com/docs/api/v1/toc/SSTTDS_cloud?lang=en */
+	var fullurl = IBMDocsurl+'/api/v1/toc/'+productKey+'?lang='+language;
+	
+	// alert('Get TOC for '+fullurl);
+	$('#tocfromjson').hide();
+	$( '#listdiv' ).append('<h3>TOC for '+fullurl+'</h3>');
+	$( '#prediv' ).append('<p style="color:red;"><strong>Note:</strong> To get a TOC with different form values, first reload this page.</p>');
+	$( '#prediv' ).show();
+	
+  $.getJSON(fullurl, function(result){
+    $.each(result, function(i, field){
+	  if (i == 'toc') {
+		var topics=field.topics;
+		$( '#listdiv' ).append('\n<ul id="toc">\n</ul>' );
+		$.each(topics, function(index, value){
+			var topicId = value.topicId;
+			var href = IBMDocsurl+'/'+value.href;
+			var label = value.label;
+            
+   			$( '#toc' ).append('<li id="'+topicId+'"><a target="opentocpage" href='+href+'>'+label+'</a></li>\n' );
+			
+			if (value.topics) {
+				getChildren(value.topics,topicId,IBMDocsurl);
+			}; 
+			// if sub topics
+			}); 
+	  }; 
+	  // if toc
+          }); 
+		  // each result
+     }); // getJSON
+  
+   return false;
+});
+
+var productKey = $("#productKey").val();
+var fileName =  productKey+'_toc.html'; // You can use the .txt extension if you want
+
+$('#downloadLink').click(function(){
+	// alert('Download button clicked');
+    downloadInnerHtml(fileName, 'listdiv','text/html');
+});
+  
+});
+
+function downloadInnerHtml(filename, elId, mimeType) {
+    var elHtml = document.getElementById(elId).innerHTML;
+	var copyHtml = '<html><head></head><body>\n'+elHtml+'\n</body></html>';
+    var link = document.createElement('a');
+    mimeType = mimeType || 'text/plain';
+
+    link.setAttribute('download', filename);
+    link.setAttribute('href', 'data:' + mimeType + ';charset=utf-8,' + encodeURIComponent(copyHtml));
+    link.click(); 
+}
+
+function getChildren(parent, parentId, IBMDocsurl) {
+		$( '#'+parentId ).append('\n<!-- Start subtopics -->\n' );
+		var ulId = parentId+'_ul'
+		$( '#'+parentId ).append('<ul id='+ulId+'>\n</ul>\n' );
+		$.each(parent, function(index, value){
+			var topicId = value.topicId;
+			var href = IBMDocsurl+'/'+value.href;
+			var label = value.label;
+            
+   			$( '#'+ulId ).append('<li id="'+topicId+'"><a target="opentocpage" href='+href+'>'+label+'</a></li>\n' );
+			
+			/* $( '#listdiv' ).append('<li id="'+topicId+'"><a href='+href+'">'+label+'</a>' ); */
+			
+			if (value.topics) {
+				getChildren(value.topics,topicId);
+			}; 
+			// if sub topics
+			}); 
+			// each subtopic
+		  	$( '#'+parentId ).append('<!-- End subtopics -->\n' );
+		}
+
+  
+})( jQuery );
+
+
+</script>
+</head>
+<body>
+<div id="tocfromjson"><h3>TOC from JSON</h3>
+<!-- https://www.ibm.com/docs/api/v1/toc/SSTTDS_cloud?lang=en -->
+<form action="">
+  IBM Docs URL: <!-- <input type="text" name="IBMDocsurl" id="IBMDocsurl" value="https://www.ibm.com/docs"><br> -->
+  <select id="IBMDocsurl">
+    <option value="https://www.ibm.com/docs" selected="selected">https://www.ibm.com/docs</option>
+    <option value="https://ibmdocs-test.mybluemix.net/docs">https://ibmdocs-test.mybluemix.net/docs</option>
+</select><br>
+  Product key: <input type="text" name="productKey" id="productKey" value="SSTTDS_cloud"><br>
+  Language: <input type="text" name="language" id="language" value="en"><br>
+  <input type="submit" value="Submit">
+</form>
+</div>
+  <div id="prediv" style="display:none;">
+  <p><a id="downloadLink" href="#">Download TOC to HTML file</a></p>
+  </div>
+  <div id="listdiv"></div>
+</body>
+
+</html>
